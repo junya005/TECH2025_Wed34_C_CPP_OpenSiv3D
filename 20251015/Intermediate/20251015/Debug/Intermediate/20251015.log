@@ -1,0 +1,47 @@
+﻿  Main.cpp
+C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Main.cpp(28,23): warning C4458: 'x' を宣言すると、クラス メンバーが隠蔽されます
+  (ソース ファイル '/Main.cpp' をコンパイルしています)
+      C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Main.cpp(6,6):
+      'CirclePlayer::x' の宣言を確認してください
+  
+C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Main.cpp(28,30): warning C4458: 'y' を宣言すると、クラス メンバーが隠蔽されます
+  (ソース ファイル '/Main.cpp' をコンパイルしています)
+      C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Main.cpp(7,6):
+      'CirclePlayer::y' の宣言を確認してください
+  
+C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Main.cpp(34,21): warning C4458: 'r' を宣言すると、クラス メンバーが隠蔽されます
+  (ソース ファイル '/Main.cpp' をコンパイルしています)
+      C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Main.cpp(8,6):
+      'CirclePlayer::r' の宣言を確認してください
+  
+C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Main.cpp(51,24): warning C4244: '初期化中': 'const s3d::Point::value_type' から 'float' への変換です。データが失われる可能性があります。
+  (ソース ファイル '/Main.cpp' をコンパイルしています)
+  
+C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Main.cpp(52,24): warning C4244: '初期化中': 'const s3d::Point::value_type' から 'float' への変換です。データが失われる可能性があります。
+  (ソース ファイル '/Main.cpp' をコンパイルしています)
+  
+C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Main.cpp(92,23): warning C4458: 'x' を宣言すると、クラス メンバーが隠蔽されます
+  (ソース ファイル '/Main.cpp' をコンパイルしています)
+      C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Main.cpp(74,6):
+      'CircleMouse::x' の宣言を確認してください
+  
+C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Main.cpp(92,30): warning C4458: 'y' を宣言すると、クラス メンバーが隠蔽されます
+  (ソース ファイル '/Main.cpp' をコンパイルしています)
+      C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Main.cpp(75,6):
+      'CircleMouse::y' の宣言を確認してください
+  
+C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Main.cpp(98,21): warning C4458: 'r' を宣言すると、クラス メンバーが隠蔽されます
+  (ソース ファイル '/Main.cpp' をコンパイルしています)
+      C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Main.cpp(76,6):
+      'CircleMouse::r' の宣言を確認してください
+  
+C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Main.cpp(113,19): warning C4100: 'deltaTime': 引数は関数の本体部で 1 度も参照されません。
+  (ソース ファイル '/Main.cpp' をコンパイルしています)
+  
+C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Main.cpp(149,19): warning C4244: '初期化中': 'double' から 'float' への変換です。データが失われる可能性があります。
+  (ソース ファイル '/Main.cpp' をコンパイルしています)
+  
+     ライブラリ C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Intermediate\20251015\Debug\20251015(debug).lib とオブジェクト C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Intermediate\20251015\Debug\20251015(debug).exp を作成中
+  20251015.vcxproj -> C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Intermediate\20251015\Debug\20251015(debug).exe
+  C:\Users\student\Documents\GitHub\TECH2025_Wed34_C_CPP_OpenSiv3D\20251015\Intermediate\20251015\Debug\20251015(debug).exe
+  1 個のファイルをコピーしました

@@ -1,0 +1,22 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "C:\\Users\\student\\Documents\\GitHub\\TECH2025_Wed34_C_CPP_OpenSiv3D\\20251015\\Intermediate\\20251015\\Debug\\Intermediate\\microsoft\\STL\\std.obj",
+            "outputs": [
+                "C:\\Users\\student\\Documents\\GitHub\\TECH2025_Wed34_C_CPP_OpenSiv3D\\20251015\\Intermediate\\20251015\\Debug\\Intermediate\\microsoft\\STL\\std.ixx.ifc.dt.module.json",
+                "C:\\Users\\student\\Documents\\GitHub\\TECH2025_Wed34_C_CPP_OpenSiv3D\\20251015\\Intermediate\\20251015\\Debug\\Intermediate\\microsoft\\STL\\std.ixx.ifc.dt.d.json",
+                "C:\\Users\\student\\Documents\\GitHub\\TECH2025_Wed34_C_CPP_OpenSiv3D\\20251015\\Intermediate\\20251015\\Debug\\Intermediate\\microsoft\\STL\\std.ifc"
+            ],
+            "provides": [
+                {
+                    "logical-name": "std",
+                    "source-path": "c:\\program files\\microsoft visual studio\\2022\\professional\\vc\\tools\\msvc\\14.43.34808\\modules\\std.ixx",
+                    "is-interface": true
+                }
+            ],
+            "requires": []
+        }
+    ]
+}
