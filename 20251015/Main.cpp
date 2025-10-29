@@ -3,122 +3,175 @@
 class CirclePlayer
 {
 private:
-	int x = 0;
-	int y = 0;
-	int r = 10;
-	Color c = Palette::Black;
+	int _x = 0;
+	int _y = 0;
+	int _r = 10;
+	Color _c = Palette::Black;
+	float _f_circle_move_x_speed = 600.0f;
+	float _f_circle_move_y_speed = 600.0f;
 
-	float f_circle_move_x_speed = 600.0f;
-	float f_circle_move_y_speed = 600.0f;
-
-	Circle circle;
 public:
-	CirclePlayer()
+	CirclePlayer() // コンストラクター　クラス実体が生まれた瞬間呼ばれる
 	{
-		circle = Circle(x,y,r);
 	}
 
-	CirclePlayer(int x, int y, int r, Color color = Palette::Magenta)
+	CirclePlayer(float x, float y, float r, Color color)
 	{
 		SetPosition(x, y);
 		SetRadius(r);
 		SetColor(color);
 	}
 
-	void SetPosition(int x, int y)
+	void SetPosition(float x, float y)
 	{
-		circle.x = x;
-		circle.y = y;
+		_x = x;
+		_y = y;
 	}
 
-	void SetRadius(int r)
+	void SetRadius(float r)
 	{
-		circle.r = r;
+		_r = r;
 	}
 
 	void SetColor(Color color)
 	{
-		c = color;
+		_c = color;
 	}
 
 	void Draw()
 	{
-		circle.draw(c);
+		Circle(_x, _y, _r).draw(_c);
 	}
 
 	void Logic(float deltaTime)
 	{
+		// 画面サイズが変わっても対応できるように
 		float screen_scale_x = Window::GetState().frameBufferSize.x;
 		float screen_scale_y = Window::GetState().frameBufferSize.y;
 
-		if (circle.x <= circle.r || circle.x >= screen_scale_x - circle.r)
+		// 画面左端に接触
+		if (_x <= _r)
 		{
-			f_circle_move_x_speed = -f_circle_move_x_speed;
+			_x = 2 * _r - _x;
+			_f_circle_move_x_speed = -_f_circle_move_x_speed;
+		}
+		// 画面右端に接触
+		if (_x >= screen_scale_x - _r)
+		{
+			_x = -_x - 2 * _r + screen_scale_x * 2;
+			_f_circle_move_x_speed = -_f_circle_move_x_speed;
+		}
+		// 画面上部に接触
+		if (_y <= _r)
+		{
+			_y = 2 * _r - _y;
+			_f_circle_move_y_speed = -_f_circle_move_y_speed;
+		}
+		// 画面下部に接触
+		if (_y >= screen_scale_y - _r)
+		{
+			_y = -_y - 2 * _r + screen_scale_y * 2;
+			_f_circle_move_y_speed = -_f_circle_move_y_speed;
 		}
 
-		if (circle.y <= circle.r || circle.y >= screen_scale_y - circle.r)
-		{
-			f_circle_move_y_speed = -f_circle_move_y_speed;
-		}
+		_x += _f_circle_move_x_speed * deltaTime;
+		_y += _f_circle_move_y_speed * deltaTime;
+	}
 
-		circle.x += f_circle_move_x_speed * deltaTime;
-		circle.y += f_circle_move_y_speed * deltaTime;
+	void CheckHit(CirclePlayer c)
+	{
+		float diffX = (float)(c._x - _x);
+		float diffY = (float)(c._y - _y);
+		float sqrMagnitude = diffX * diffX + diffY * diffY;
+		float sqrRadius = (float)(c._r * c._r + _r * _r);
+
+		// 異なる円の中心が同じ
+		if(sqrMagnitude<sqrRadius)
+		{
+			// HIT!
+			// Print << U"HIT!";
+
+			float ragRefSurface = Math::Atan2(diffY, diffX) - Math::Pi * 0.5f;
+			float ragAccel = Math::Atan2(_f_circle_move_y_speed, _f_circle_move_x_speed);
+			float ragRef = Math::Pi * 2.0f - (ragAccel - ragRefSurface)+ragRefSurface;
+
+			float accelPower = Math::Sqrt(_f_circle_move_y_speed * _f_circle_move_y_speed + _f_circle_move_x_speed * _f_circle_move_x_speed);
+			_f_circle_move_x_speed = accelPower * Math::Cos(ragRef);
+			_f_circle_move_y_speed = accelPower * Math::Sin(ragRef);
+		}
 	}
 };
 
-class CircleMouse
-{
-private:
-	int x = Cursor::Pos().x;
-	int y = Cursor::Pos().y;
-	int r = 10;
-	Color c = Palette::Black;
-	Circle circle;
-public:
-	CircleMouse()
-	{
-		circle = Circle(x, y, r);
-	}
+Rect rect_enemy = Rect(100, 200, 30, 50);
 
-	CircleMouse(int x, int y, int r, Color color = Palette::Magenta)
-	{
-		SetPosition(x, y);
-		SetRadius(r);
-		SetColor(color);
-	}
+CirclePlayer cp_a = CirclePlayer();
+CirclePlayer cp_b = CirclePlayer(400, 150, 50, Palette::Green);
+Circle cir_player = Circle(100, 200, 10);
 
-	void SetPosition(int x, int y)
-	{
-		circle.x = x;
-		circle.y = y;
-	}
-
-	void SetRadius(int r)
-	{
-		circle.r = r;
-	}
-
-	void SetColor(Color color)
-	{
-		c = color;
-	}
-
-	void Draw()
-	{
-		circle.draw(c);
-	}
-
-	void Logic(float deltaTime)
-	{
-		circle.x = Cursor::Pos().x;
-		circle.y = Cursor::Pos().y;
-	}
-};
+// メソッドの定義
+void Logic(float);
+void Draw(float);
+void Update(float);
+void Initialize();
+void InputMain(float);
 
 void Main()
 {
-	CirclePlayer cp_a = CirclePlayer(100, 200, 80);
-	CircleMouse cm_a = CircleMouse(100,200,20, Palette::Aqua);
+	Initialize();
+
+	while(System::Update())
+	{
+		float deltaTime = Scene::DeltaTime();
+		Update(deltaTime);
+	}
+}
+
+/// @brief 全体のUpdateがここから始動する
+/// @param deltaTime 
+void Update(float deltaTime)
+{
+	Logic(deltaTime);
+	Draw(deltaTime);
+	InputMain(deltaTime);
+}
+
+/// @brief ロジカルに演算する場所
+/// @param deltaTime 
+void Logic(float deltaTime)
+{
+	rect_enemy.y++;
+	
+	cp_a.Logic(deltaTime);
+	cp_b.Logic(deltaTime);
+
+	cp_a.CheckHit(cp_b);
+	cp_b.CheckHit(cp_a);
+
+	cir_player.x = Cursor::Pos().x;
+	cir_player.y = Cursor::Pos().y;
+}
+
+/// @brief 表示部分
+/// @param deltaTime 
+void Draw(float deltaTime)
+{
+	rect_enemy.draw(Palette::Aqua);
+
+	cp_b.Draw(); //cir_player.draw(Palette::Red);
+	cp_a.Draw(); //cir_player.draw(Palette::Red);
+
+	cir_player.draw();
+}
+
+void Initialize()
+{
+	cp_a.SetPosition(100, 100);
+	cp_a.SetRadius(50);
+	cp_a.SetColor(Palette::Red);
+
+	cp_b.SetPosition(400, 150);
+	cp_b.SetRadius(50);
+	cp_b.SetColor(Palette::Green);
 
 	int i_a = 0;	// C/C++の場合、初期化し忘れに注意
 	float f_b = 3.0f;		// 具体的には、初期化しないまま使用すると、値が不定になる
@@ -126,14 +179,7 @@ void Main()
 
 	String str_c = U"A";
 
-	Array<int> arr_i_ids = { 999, 0, 1};
-
-	Circle cir_player = Circle(100,200,80);
-
-	Rect rect_enemy = Rect(100,200,30,50);
-
-	// float f_circle_move_x_speed = 600.0f;
-	// float f_circle_move_y_speed = 600.0f;
+	Array<int> arr_i_ids = { 999, 0, 1 };
 
 	// 1行無視しろ
 	/*
@@ -142,57 +188,15 @@ void Main()
 
 	Print << i_a << f_b << c_d << str_c << arr_i_ids[0] << Window::GetState().frameBufferSize;
 
-	while(System::Update())
+}
+
+/// @brief 入力はここにまとめる
+/// @param deltaTime 
+void InputMain(float deltaTime)
+{
+	// R + Shiftキーをたたいたら、ゲームが最初に戻る
+	if(KeyR.down() && KeyLShift.pressed())
 	{
-		float deltaTime = Scene::DeltaTime();
-
-		rect_enemy.draw(Palette::Aqua);
-
-		cp_a.Draw();
-		cp_a.Logic(deltaTime);
-
-		cm_a.Draw();
-		cm_a.Logic(deltaTime);
-
-		
-
-
-
-		// マウスカーソルに円を表示
-		
-
-		/*
-		float moveSpeedPlayer = 5.0f;
-		int moveSinePlayer = 1.0f;
-
-		float moveSpeedEnemy = 5.0f;
-		int moveSineEnemy = 1.0f;
-		*/
-
-		/*
-		if (cir_player.x + cir_player.r >= Window::GetState().frameBufferSize.x
-			|| cir_player.y + cir_player.r >= Window::GetState().frameBufferSize.y)
-		{
-			moveSinePlayer *= -1;
-
-		}
-		else if (cir_player.x - cir_player.r <= 0.0f || cir_player.y - cir_player.r <= 0.0f)
-		{
-			moveSinePlayer *= -1;
-		}
-
-		if (rect_enemy.x + rect_enemy.size.x >= Window::GetState().frameBufferSize.x
-			|| rect_enemy.y + rect_enemy.size.y >= Window::GetState().frameBufferSize.y)
-		{
-			moveSineEnemy *= -1;
-		}
-		else if(rect_enemy.x <= 0.0f || rect_enemy.y <= 0.0f)
-		{
-			moveSineEnemy *= -1;
-		}
-
-		cir_player.x += moveSpeedPlayer * moveSinePlayer;
-		rect_enemy.y += moveSpeedEnemy * moveSineEnemy;
-		*/
+		Initialize();
 	}
 }
