@@ -40,4 +40,8 @@
 # debug information files
 *.dwo
 
-.vs
+.vs/
+.vscode/
+
+*.sln
+Intermediate/
