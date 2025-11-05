@@ -43,6 +43,9 @@
 .vs/
 .vscode/
 Intermediate/
+ipch/
 
-*.sln
+*.suo
 *.vcxproj.user
+*.sdf
+
