@@ -6,13 +6,22 @@ private:
 	int _x = 0;
 	int _y = 0;
 	int _r = 10;
+	float _weight = 314.2f;
 	Color _c = Palette::Black;
 	float _f_circle_move_x_speed = 600.0f;
 	float _f_circle_move_y_speed = 600.0f;
-
+	float _f_circle_move_x_speed_impluse = 0.0f;
+	float _f_circle_move_y_speed_impluse = 0.0f;
+	float _accelPower = 84.8528137424f;
 public:
 	CirclePlayer() // コンストラクター　クラス実体が生まれた瞬間呼ばれる
 	{
+	}
+
+	float GetPower()
+	{
+		float ret = _accelPower* _accelPower* _weight;
+		return ret;
 	}
 
 	CirclePlayer(float x, float y, float r, Color color)
@@ -31,11 +40,19 @@ public:
 	void SetRadius(float r)
 	{
 		_r = r;
+		_weight = Math::Pi * r * r;
 	}
 
 	void SetColor(Color color)
 	{
 		_c = color;
+	}
+
+	void SetSpeed(float x, float y)
+	{
+		_f_circle_move_x_speed = x;
+		_f_circle_move_y_speed = y;
+		_accelPower = Math::Sqrt(x * x + y * y);
 	}
 
 	void Draw()
@@ -45,6 +62,11 @@ public:
 
 	void Logic(float deltaTime)
 	{
+		_x += (int)_f_circle_move_x_speed_impluse;
+		_f_circle_move_x_speed_impluse = 0.0f;
+		_y += (int)_f_circle_move_y_speed_impluse;
+		_f_circle_move_y_speed_impluse = 0.0f;
+
 		// 画面サイズが変わっても対応できるように
 		float screen_scale_x = Window::GetState().frameBufferSize.x;
 		float screen_scale_y = Window::GetState().frameBufferSize.y;
@@ -74,8 +96,8 @@ public:
 			_f_circle_move_y_speed = -_f_circle_move_y_speed;
 		}
 
-		_x += _f_circle_move_x_speed * deltaTime;
-		_y += _f_circle_move_y_speed * deltaTime;
+		_x += (int)(_f_circle_move_x_speed * deltaTime);
+		_y += (int)(_f_circle_move_y_speed * deltaTime);
 	}
 
 	void CheckHit(CirclePlayer c)
@@ -95,9 +117,28 @@ public:
 			float ragAccel = Math::Atan2(_f_circle_move_y_speed, _f_circle_move_x_speed);
 			float ragRef = Math::Pi * 2.0f - (ragAccel - ragRefSurface)+ragRefSurface;
 
-			float accelPower = Math::Sqrt(_f_circle_move_y_speed * _f_circle_move_y_speed + _f_circle_move_x_speed * _f_circle_move_x_speed);
-			_f_circle_move_x_speed = accelPower * Math::Cos(ragRef);
-			_f_circle_move_y_speed = accelPower * Math::Sin(ragRef);
+			// かぶっている長さを割り出す
+			float overlappingDistance = Math::Sqrt(sqrRadius - sqrMagnitude);
+			float kTheta = ragRef - ragRefSurface; // TODO ミスっているので、解消のため時間とる
+			float warpDistance = Math::Abs(overlappingDistance / Math::Sin(kTheta));
+
+			float power = GetPower();
+			float powerAnother = c.GetPower();
+			float sumWeight = power + powerAnother;// 相手と自分の合計比率
+			float perWeight = power / sumWeight;// 自分の重量比率
+			// float perWeightAnother = powerAnother/ sumWeight; // 相手の重量比率
+			
+			// 自分が残留する分
+			float accelHoldPower = perWeight;
+			// 自分が影響を及ぼす分
+			float accelNewAccelPer = (1.0f - perWeight)*2.0f;
+
+			float newX = (_accelPower * Math::Cos(ragRef)) * accelNewAccelPer + _f_circle_move_x_speed * accelHoldPower;
+			float newY = (_accelPower * Math::Sin(ragRef)) * accelNewAccelPer + _f_circle_move_y_speed * accelHoldPower;
+			SetSpeed(newX, newY);
+
+			_f_circle_move_x_speed_impluse = warpDistance * Math::Cos(ragRef);
+			_f_circle_move_y_speed_impluse = warpDistance * Math::Sin(ragRef);
 		}
 	}
 };
@@ -166,11 +207,13 @@ void Draw(float deltaTime)
 void Initialize()
 {
 	cp_a.SetPosition(100, 100);
-	cp_a.SetRadius(50);
+	cp_a.SetSpeed(600, 600);
+	cp_a.SetRadius(10);
 	cp_a.SetColor(Palette::Red);
 
 	cp_b.SetPosition(400, 150);
-	cp_b.SetRadius(50);
+	cp_b.SetSpeed(600, 600);
+	cp_b.SetRadius(100);
 	cp_b.SetColor(Palette::Green);
 
 	int i_a = 0;	// C/C++の場合、初期化し忘れに注意
