@@ -18,6 +18,8 @@ char childTangue[26] = { U'A', U'B', U'C', U'D', U'E',
 class Civilization
 {
 public:
+	bool IsDead = false;
+
 	Civilization()
 	{
 		IsDead = false;
@@ -47,14 +49,15 @@ public:
 
 	}
 
-	void Logic(float deltaTime)
+	void Logic(float deltaTime, double year)
 	{
 		if (IsDead)return;
-		_radius += Random(-deltaTime, +deltaTime);
+		_radius += Random(-deltaTime, +deltaTime) * 10.0f;
 
 		if(_radius < 0)
 		{
-			_radius = 0;
+			IsDead = true;
+			Print << U"宇宙歴" << year << U"年[" << _name << U"]は滅びた";
 		}
 	}
 
@@ -64,18 +67,28 @@ public:
 		Circle(_x + 1280/2, _y + 720/2, _radius).draw(ColorF(_attack, _insight, _invisible));
 	}
 
-	void DrawName(Font f)
+	void DrawName(const Font& font)
 	{
 		if (IsDead)return;
-		f(U"{}"_fmt(_name)).draw(10, Vec2{ _x + 1280 / 2, _y + 720 / 2 + 5 }, ColorF{ 1.0f, 1.0f, 1.0f });
+		int size = _radius * 2;
+		if (size > 10) size = 10;
+		font(_name).drawAt(size, Vec2{ _x + 1280 / 2, _y + 720 / 2 + 5 }, ColorF{ 1, 1, 1 });
 	}
 
-	void SearchAndDestroy(Civilization another)
+	void SearchAndDestroy(Civilization& another, double& year)
 	{
+		Civilization* p1 = this;
+		Civilization* p2 = &another;
+
+		if (p1 == p2)
+		{
+			Print << U"宇宙歴" << year << U"年に[" << _name << U"]の内戦が終了した";
+			return;
+		}
 		if (IsDead || another.IsDead)return;
 
-		// 相手の隠蔽度が自身の隠蔽度よりも高ければ、何もしない
-		if (another._invisible >= _insight) return;
+		// 自分の隠蔽度が相手の眼光よりも高ければ、何もしない
+		if (another._invisible <= _insight) return;
 
 		float distX = another._x - _x;
 		float distY = another._y - _y;
@@ -87,22 +100,37 @@ public:
 		{
 			// 絶対先制攻撃のパーセンテージ
 			float percentage100 = 0;
-			if (_radius >= another._radius) percentage100 + 0.25f;
-			if (another._attack >= _attack)percentage100 + 0.25f;
+			if (_radius <= another._radius) percentage100 + 0.25f;
+			if (another._attack <= _attack)percentage100 + 0.25f;
 			if (sqrDistance > 25) percentage100 += (float)(sqrDistance - 25) * 0.1f;
 
 			percentage100 += _attack;
 
 			if(percentage100>=Random(0,100))
 			{
-				_radius += another._radius * 0.01f;
-				another.IsDead = true;
-				Print << another._name << U" is dead";
+				another._radius += _radius / another._radius * 0.5f;
+
+				IsDead = true;
+
+				Print << U"宇宙歴" << year << U"年[" << _name << U"]\nが[" << another._name << U"]に滅ぼされた";
 			}
 		}
 	}
 
-	bool IsDead = false;
+	float GetRadius()
+	{
+		return _radius;
+	}
+
+	String GetName()
+	{
+		return _name;
+	}
+
+	ColorF GetColor()
+	{
+		return ColorF(_attack, _insight, _invisible);
+	}
 
 private:
 	// 攻撃性向
@@ -125,7 +153,7 @@ void Main()
 	Window::Resize(1280,720);
 
 	// 太文字のフォントを作成する | Create a bold font with MSDF method
-	const Font font{ FontMethod::MSDF, 24, Typeface::Bold };
+	const Font font{ FontMethod::MSDF, 12, Typeface::Bold };
 
 	// 背景の色を設定する | Set the background color
 	Scene::SetBackground(ColorF{ 0.0f, 0.0f, 0.0f });
@@ -140,6 +168,7 @@ void Main()
 	float popCivCount = 0.0f;
 
 	Civilization civs[10000];
+	Civilization* drawCivs[10000];
 	int popedCount = 0;
 
 	while (System::Update())
@@ -150,32 +179,66 @@ void Main()
 		{
 			Civilization c = Civilization();
 
-			civs[popedCount++] = c;
+			civs[popedCount] = c;
+			drawCivs[popedCount] = &civs[popedCount];
+
+			popedCount++;
 		}
 
-		// テキストを描く | Draw text
-		font(U"宇宙歴:{}"_fmt((long)(year+=Scene::DeltaTime()*1000.0f))).draw(16, Vec2{ 10, 10 }, ColorF{ 0.0f, 0.0f, 1.0f });
+		// ポインター配列を実態の半径の大きい順に並べる	ただし、死んでいる文明は劣後する
+		Civilization* temp;
+		for (int i = 0; i < popedCount; i++)
+		{
+			for (int j = 0; j < popedCount; j++)
+			{
+				if (drawCivs[i]->IsDead || drawCivs[i]->GetRadius() > drawCivs[j]->GetRadius())
+				{
+					temp = drawCivs[i];
+					drawCivs[i] = drawCivs[j];
+					drawCivs[j] = temp;
+				}
+			}
+		}
 
 		for (int i = 0; i < popedCount; i++)
 		{
-			civs[i].Logic(Scene::DeltaTime());
-			civs[i].Draw();
-			civs[i].DrawName(font);
-
-			for(int j = 0; j<popedCount; j++)
+			if (civs[i].IsDead)
 			{
-				if (i != j)civs[i].SearchAndDestroy(civs[j]);
-			}
-
-			if(civs[i].IsDead)
-			{
-				for(int j = i; j < popedCount-1; j++)
+				for (int j = i; j < popedCount - 1; j++)
 				{
 					civs[j] = civs[j + 1];
 				}
-				civs[popedCount - 1] = 0;
+				popedCount--;
 			}
 		}
+
+		Rect(0, 0, 1280, 800).draw({ ColorF{0.2f, 0, 0},ColorF{0, 0.2f, 0}, ColorF{0.0f, 0.0f, 0.2f} });
+
+		// テキストを描く | Draw text
+		font(U"宇宙歴:{}"_fmt((long)(year+=Scene::DeltaTime()*1000.0f))).draw(16, Vec2{ 800, 10 }, ColorF{ 1.0f, 1.0f, 1.0f });
+
+		
+
+		for (int i = 0; i < popedCount; i++)
+		{
+			for (int j = 0; j < popedCount; j++)
+			{
+				if (i != j)civs[i].SearchAndDestroy(civs[j], year);
+			}
+
+			civs[i].Logic(Scene::DeltaTime(), year);
+			drawCivs[i]->Draw();
+			civs[i].DrawName(font);
+		}
+
+		// UI部分を表示する
+		for (int i = 0; i < 10 && i < popedCount; i++)
+		{
+			Circle(1000 - 20, 50 + 50 * i, 16).draw(drawCivs[i]->GetColor());
+			font(U"{}.［{}]{}"_fmt(i+1, (int)drawCivs[i]->GetRadius(), drawCivs[i]->GetName())).draw(16, Vec2{1000, 50 + 50 * i}, drawCivs[i]->GetColor());
+		}
+
+
 	}
 }
 
