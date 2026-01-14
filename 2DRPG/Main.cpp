@@ -66,45 +66,168 @@ Grid<int32> LoadCSV(FilePathView path)
 }
 
 // 再帰関数 ルート探索 A*
-Point SearchRoute(Point searchBase, Point targetPoint, Array<Point> &routes, Grid<bool> &openGrid)
+bool SearchRoute(Point searchBase, Point targetPoint, Array<Point> &routes, Grid<bool> &openGrid, Grid<int32> &mapPassible, int32 searchLayerCount)
 {
-	if (searchBase.x < 0 || searchBase.x >= openGrid.size().x || 
-		searchBase.y < 0 || searchBase.y >= openGrid.size().y)// width? height?
+	int currentSearchLayerCount = searchLayerCount + 1;
+	if (searchBase.x < 0 ||  openGrid.size().x <= searchBase.x  ||
+		searchBase.y < 0 ||  openGrid.size().y <= searchBase.y )// width? height?
 	{
-		return Point{ -1,-1 };
+		return -1;
 	}
-	if (openGrid[searchBase.x][searchBase.y] == false)return Point{-1,-1};
+	if (openGrid[searchBase.y][searchBase.x] == false)return -1;
 	if (searchBase == targetPoint)
 	{
 		routes << searchBase;
-		return searchBase;
+		return currentSearchLayerCount;
 	}
+	if (mapPassible[searchBase] == 1)return -1;
 
 	// 検索を終えたら、ノードを閉じる
-	openGrid[searchBase.x][searchBase.y] = false;
+	openGrid[searchBase.y][searchBase.x] = currentSearchLayerCount;
 
-	if(SearchRoute(Point{ searchBase.x + 1, searchBase.y }, targetPoint, routes, openGrid) == Point{-1,-1})
+	// 0:東, 1:西, 2:南, 3:北
+	const Grid<int32> searchTypeGrid =
 	{
-		return Point{ -1,-1 };
-	}
-	else if(SearchRoute(Point{ searchBase.x - 1, searchBase.y }, targetPoint, routes, openGrid) == Point{ -1,-1 })
+		{0,1,2,3}, // 0は×
+		{0,2,1,3},
+		{0,2,3,1},
+
+		{2,0,1,3},
+		{2,0,3,1},
+		{2,3,0,1}, // 5は×
+
+		{0,1,3,2}, // 6は×
+		{0,3,1,2},
+		{0,3,2,1},
+
+		{3,0,1,2},
+		{3,0,2,1},
+		{3,2,0,1},// 11は×
+
+		{1,0,2,3},// 12は×
+		{1,2,0,3},
+		{1,2,3,0},
+
+		{2,1,0,3},
+		{2,1,3,0},
+		{2,3,1,0},// 17は×
+
+		{1,0,3,2},// 18は×
+		{1,3,0,2},
+		{1,3,2,0},		
+		
+		{3,1,0,2},
+		{3,1,2,0},
+		{3,2,1,0},// 23は×
+		
+	};
+
+	int searchTypeId = 0;
+	// 見込み順にソート
+	Point diff = targetPoint - searchBase;
+	Point abs = Point{ Math::Abs(diff.x), Math::Abs(diff.y) };
+
+	if(diff.x >= 0)
 	{
-		return Point{ -1,-1 };
-	}
-	else if(SearchRoute(Point{ searchBase.x, searchBase.y + 1 }, targetPoint, routes, openGrid) == Point{ -1,-1 })
-	{
-		return Point{ -1,-1 };
-	}
-	else if(SearchRoute(Point{ searchBase.x, searchBase.y - 1 }, targetPoint, routes, openGrid) == Point{ -1,-1 })
-	{
-		return Point{ -1,-1 };
+		// id 0-11
+
+		if (diff.y >= 0)
+		{
+			// id 0-5
+			if(abs.x >= abs.y)
+			{
+				// id 0-2
+				searchTypeId = 1;
+			}
+			else
+			{
+				// id 3-5
+				searchTypeId = 3;
+			}
+		}
+		else
+		{
+			// id 6-11
+			if (abs.x >= abs.y)
+			{
+				// id 6-8
+				searchTypeId = 7;
+			}
+			else
+			{
+				// id 9-11
+				searchTypeId = 9;
+			}
+		}
 	}
 	else
 	{
-		routes.resize(routes.size() + 1);
-		routes << searchBase;
-		return searchBase;
+		// id 12-23
+
+		if (diff.x >= 0)
+		{
+			// id 12-17
+			if (abs.x >= abs.y)
+			{
+				// id 12-14
+				searchTypeId = 13;
+			}
+			else
+			{
+				// id 15-17
+				searchTypeId = 15;
+			}
+		}
+		else
+		{
+			// id 18-23
+			if (abs.x >= abs.y)
+			{
+				// id 18-20
+				searchTypeId = 19;
+			}
+			else
+			{
+				// id 21-23
+				searchTypeId = 21;
+			}
+		}
 	}
+
+	Array<int32> rootWeight = Array<int>{0, 0, 0, 0};
+	for(int i = 0; i < searchTypeGrid.width(); i++)
+	{
+		int32 switchDirectionNum = searchTypeGrid[searchTypeId][i];
+		int32 w;
+		bool haveRoot = false;
+		switch(switchDirectionNum)
+		{
+		case 0:// 東
+			w = SearchRoute(Point{ searchBase.x + 1, searchBase.y }, targetPoint, routes, openGrid, mapPassible, currentSearchLayerCount);
+			break;
+		case 1:// 西
+			w = SearchRoute(Point{ searchBase.x - 1, searchBase.y }, targetPoint, routes, openGrid, mapPassible, currentSearchLayerCount);
+			break;
+		case 2:// 南
+			w = SearchRoute(Point{ searchBase.x, searchBase.y + 1 }, targetPoint, routes, openGrid, mapPassible, currentSearchLayerCount);
+			break;
+		case 3:// 北
+			w = SearchRoute(Point{ searchBase.x, searchBase.y - 1 }, targetPoint, routes, openGrid, mapPassible, currentSearchLayerCount);
+			break;
+		default:
+			break;
+		}
+
+		if (w >= 1 && wight > w)
+		{
+			wight = w;
+			rightRootID = i;
+		}
+	}
+
+	// TODO:正しいWeightを返す
+
+	return -1;
 }
 
 void Main()
@@ -252,8 +375,9 @@ void Main()
 				if(nextCell==routes[routes.size()-1])
 				{
 					routes.removed_at(routes.size() - 1);
+					routes.resize(routes.size() - 1);
 				}
-
+				Print << currentCell << U":" << routes[routes.size() - 1];
 				nextCell = routes[routes.size() - 1];
 
 				Point diff = nextCell - currentCell;
@@ -266,11 +390,11 @@ void Main()
 				{
 					direction = 2;
 				}
-				if (diff.x == -1)
+				if (diff.y == -1)
 				{
 					direction = 3;
 				}
-				if (diff.x == 1)
+				if (diff.y == 1)
 				{
 					direction = 0;
 				}
@@ -322,33 +446,6 @@ void Main()
 				// 移動しない場合、歩行の進捗は 1.0
 				walkProgress = 1.0;
 			}
-
-			// 左クリックで、ルート検索し、そこへ移動
-			if (MouseL.down())
-			{
-				int mousePosX = Cursor::Pos().x;
-				int mousePosY = Cursor::Pos().y;
-				Vec2 index = mapchip.GetFromMouse(Vec2{ (int)mousePosX, (int)mousePosY });
-
-				Point warpCell = Point{ (int)index.x, (int)index.y };
-
-				warpCell.x = Clamp(warpCell.x, 0, (MapSize.x - 1));
-				warpCell.y = Clamp(warpCell.y, 0, (MapSize.y - 1));
-
-				if (mapPassable[warpCell] == 0)
-				{
-					// nextCell = currentCell = Point{ (int)index.x, (int)index.y };
-					targetCell = warpCell;
-
-					mapSearchOpen.fill(true);
-
-					SearchRoute(currentCell, targetCell, routes, mapSearchOpen);
-				}
-				else
-				{
-					targetCell = Point{ -1,-1 };
-				}
-			}
 		}
 
 		// 移動中の場合
@@ -365,7 +462,38 @@ void Main()
 			}
 		}
 
-		
+		// 左クリックで、ルート検索し、そこへ移動
+		if (MouseL.down())
+		{
+			int mousePosX = Cursor::Pos().x;
+			int mousePosY = Cursor::Pos().y;
+			Vec2 index = mapchip.GetFromMouse(Vec2{ mousePosX, mousePosY });
+
+			Point warpCell = Point{ (int)index.x, (int)index.y };
+
+			warpCell.x = Clamp(warpCell.x, 0, (MapSize.x - 1));
+			warpCell.y = Clamp(warpCell.y, 0, (MapSize.y - 1));
+
+			if (mapPassable[warpCell] == 0)
+			{
+				// nextCell = currentCell = Point{ (int)index.x, (int)index.y };
+				targetCell = warpCell;
+
+				mapSearchOpen.fill(true);
+				routes.resize(0);
+
+				SearchRoute(currentCell, targetCell, routes, mapSearchOpen, mapPassable, 0);
+				ClearPrint();
+				for (int i = 0; i < routes.size() - 1; i++)
+				{
+					Print << routes[i];
+				}
+			}
+			else
+			{
+				targetCell = Point{ -1,-1 };
+			}
+		}
 
 		////////////////////////////////
 		//
