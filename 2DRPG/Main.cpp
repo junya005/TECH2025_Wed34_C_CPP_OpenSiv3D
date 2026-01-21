@@ -1,5 +1,6 @@
 ﻿# include <Siv3D.hpp> // OpenSiv3D v0.6.3
 
+
 class MapChip
 {
 public:
@@ -19,11 +20,14 @@ public:
 		return m_base(x, y, MapChipSize);
 	}
 
-	Vec2 GetFromMouse(Vec2 mousePos)
+	int GetXFromMouseX(int mouseX)
 	{
-		const int32 x = mousePos.x / MapChipSize / 2;
-		const int32 y = mousePos.y / MapChipSize / 2;
-		return Vec2{x, y};
+		return mouseX / MapChipSize / 2;
+	}
+
+	int GetYFromMouseY(int mouseY)
+	{
+		return mouseY / MapChipSize / 2;
 	}
 
 private:
@@ -65,169 +69,76 @@ Grid<int32> LoadCSV(FilePathView path)
 	return map;
 }
 
-// 再帰関数 ルート探索 A*
-bool SearchRoute(Point searchBase, Point targetPoint, Array<Point> &routes, Grid<bool> &openGrid, Grid<int32> &mapPassible, int32 searchLayerCount)
+bool SearchRouteDir(int32 weight, Point searchBase, Point targetPoint, Array<Point>& routes, Grid<bool>& openGrid, Grid<int32>& mapPassible);
+
+
+// 再帰関数 ルート探索　A＊
+int32 SearchRoute(int32 weight, Point searchBase, Point targetPoint, Array<Point>& routes, Grid<bool>& openGrid, Grid<int32>& mapPassible)
 {
-	int currentSearchLayerCount = searchLayerCount + 1;
-	if (searchBase.x < 0 ||  openGrid.size().x <= searchBase.x  ||
-		searchBase.y < 0 ||  openGrid.size().y <= searchBase.y )// width? height?
-	{
-		return -1;
-	}
-	if (openGrid[searchBase.y][searchBase.x] == false)return -1;
+	
+
+	if (searchBase.x < 0 || searchBase.x >= openGrid.width() || searchBase.y < 0 || searchBase.y >= openGrid.height()) return -1;
+	if (openGrid[searchBase.y][searchBase.x] == false) return -1;
+
+	if (mapPassible[searchBase] == 1) return -1;
+
+	// 検索をおえたら、ノードを閉じる
+	openGrid[searchBase.y][searchBase.x] = false;
+
 	if (searchBase == targetPoint)
 	{
 		routes << searchBase;
-		return currentSearchLayerCount;
-	}
-	if (mapPassible[searchBase] == 1)return -1;
-
-	// 検索を終えたら、ノードを閉じる
-	openGrid[searchBase.y][searchBase.x] = currentSearchLayerCount;
-
-	// 0:東, 1:西, 2:南, 3:北
-	const Grid<int32> searchTypeGrid =
-	{
-		{0,1,2,3}, // 0は×
-		{0,2,1,3},
-		{0,2,3,1},
-
-		{2,0,1,3},
-		{2,0,3,1},
-		{2,3,0,1}, // 5は×
-
-		{0,1,3,2}, // 6は×
-		{0,3,1,2},
-		{0,3,2,1},
-
-		{3,0,1,2},
-		{3,0,2,1},
-		{3,2,0,1},// 11は×
-
-		{1,0,2,3},// 12は×
-		{1,2,0,3},
-		{1,2,3,0},
-
-		{2,1,0,3},
-		{2,1,3,0},
-		{2,3,1,0},// 17は×
-
-		{1,0,3,2},// 18は×
-		{1,3,0,2},
-		{1,3,2,0},		
-		
-		{3,1,0,2},
-		{3,1,2,0},
-		{3,2,1,0},// 23は×
-		
-	};
-
-	int searchTypeId = 0;
-	// 見込み順にソート
-	Point diff = targetPoint - searchBase;
-	Point abs = Point{ Math::Abs(diff.x), Math::Abs(diff.y) };
-
-	if(diff.x >= 0)
-	{
-		// id 0-11
-
-		if (diff.y >= 0)
-		{
-			// id 0-5
-			if(abs.x >= abs.y)
-			{
-				// id 0-2
-				searchTypeId = 1;
-			}
-			else
-			{
-				// id 3-5
-				searchTypeId = 3;
-			}
-		}
-		else
-		{
-			// id 6-11
-			if (abs.x >= abs.y)
-			{
-				// id 6-8
-				searchTypeId = 7;
-			}
-			else
-			{
-				// id 9-11
-				searchTypeId = 9;
-			}
-		}
-	}
-	else
-	{
-		// id 12-23
-
-		if (diff.x >= 0)
-		{
-			// id 12-17
-			if (abs.x >= abs.y)
-			{
-				// id 12-14
-				searchTypeId = 13;
-			}
-			else
-			{
-				// id 15-17
-				searchTypeId = 15;
-			}
-		}
-		else
-		{
-			// id 18-23
-			if (abs.x >= abs.y)
-			{
-				// id 18-20
-				searchTypeId = 19;
-			}
-			else
-			{
-				// id 21-23
-				searchTypeId = 21;
-			}
-		}
+		return weight;
 	}
 
-	Array<int32> rootWeight = Array<int>{0, 0, 0, 0};
-	for(int i = 0; i < searchTypeGrid.width(); i++)
+	if(SearchRouteDir(weight, searchBase, targetPoint, routes, openGrid, mapPassible))
 	{
-		int32 switchDirectionNum = searchTypeGrid[searchTypeId][i];
-		int32 w;
-		bool haveRoot = false;
-		switch(switchDirectionNum)
-		{
-		case 0:// 東
-			w = SearchRoute(Point{ searchBase.x + 1, searchBase.y }, targetPoint, routes, openGrid, mapPassible, currentSearchLayerCount);
-			break;
-		case 1:// 西
-			w = SearchRoute(Point{ searchBase.x - 1, searchBase.y }, targetPoint, routes, openGrid, mapPassible, currentSearchLayerCount);
-			break;
-		case 2:// 南
-			w = SearchRoute(Point{ searchBase.x, searchBase.y + 1 }, targetPoint, routes, openGrid, mapPassible, currentSearchLayerCount);
-			break;
-		case 3:// 北
-			w = SearchRoute(Point{ searchBase.x, searchBase.y - 1 }, targetPoint, routes, openGrid, mapPassible, currentSearchLayerCount);
-			break;
-		default:
-			break;
-		}
+		routes << searchBase;
 
-		if (w >= 1 && wight > w)
-		{
-			wight = w;
-			rightRootID = i;
-		}
+		return weight;
 	}
-
-	// TODO:正しいWeightを返す
 
 	return -1;
+
+}
+
+bool SearchRouteDir(int32 weight, Point searchBase, Point targetPoint, Array<Point>& routes, Grid<bool>& openGrid, Grid<int32>& mapPassible)
+{
+	weight++;
+
+	Array<int32> weights = Array<int32>{ 999, 999, 999, 999 };
+	Array<Point> dirPs = Array<Point>{ Point{ searchBase.x + 1, searchBase.y },
+									Point{ searchBase.x - 1, searchBase.y },
+									Point{ searchBase.x, searchBase.y + 1 },
+									Point{ searchBase.x, searchBase.y - 1 } };
+
+	weights[0] = SearchRoute(weight, dirPs[0], targetPoint, routes, openGrid, mapPassible);
+	weights[1] = SearchRoute(weight, dirPs[1], targetPoint, routes, openGrid, mapPassible);
+	weights[2] = SearchRoute(weight, dirPs[2], targetPoint, routes, openGrid, mapPassible);
+	weights[3] = SearchRoute(weight, dirPs[3], targetPoint, routes, openGrid, mapPassible);
+
+	
+
+	int32 sw = 999;
+	int minId = 0;
+	for (int i = 0; i < weights.size(); i++)
+	{
+		if (weights[i] >= 0 && sw > weights[i])
+		{
+			minId = i;
+			sw = weights[i];
+		}
+	}
+
+	if(weights[minId] != -1 && sw != 999)
+	{
+		routes << dirPs[minId];
+		return true;
+	}
+
+	return false;
+
+	
 }
 
 void Main()
@@ -250,8 +161,8 @@ void Main()
 	// 通行可能判定用の二次元配列
 	Grid<int32> mapPassable = LoadCSV(U"passable.csv");
 
-	Grid<bool> mapSearchOpen = Grid<bool>(MapSize.x, MapSize.y, true);
-	Array<Point> routes = Array<Point>();
+	Grid<bool> mapSearchOpen = Grid<bool>{ MapSize.x, MapSize.y, true };
+	Array<Point> routes = Array<Point>{};
 
 	if ((mapLayer0.size() != MapSize)
 		|| (mapLayer1.size() != MapSize)
@@ -270,8 +181,8 @@ void Main()
 	// 移動先のセル座標
 	Point nextCell = currentCell;
 
-	// マウスで指定した移動先のセル
-	Point targetCell{ -1,-1 };
+	// マウスで指示した移動先のセル
+	Point targetCell{ -1 , -1 };
 
 	// 歩行の速さ (マス/秒)
 	constexpr double walkSpeed = 2.5;
@@ -300,79 +211,9 @@ void Main()
 		// 現在移動中でない場合、上下左右キーで次に進むセルを変更
 		if (currentCell == nextCell)
 		{
-			/*
-			if (targetCell.x >= 0)
+			if (routes.size() > 1)
 			{
-				if (Point(currentCell.x - 1, currentCell.y) == targetCell)
-				{
-					--nextCell.x;
-					direction = 1;
-					targetCell = Point{ -1,-1 };
-				}
-				else if (Point(currentCell.x + 1, currentCell.y) == targetCell)
-				{
-					++nextCell.x;
-					direction = 2;
-					targetCell = Point{ -1,-1 };
-				}
-				else if (Point(currentCell.x, currentCell.y - 1) == targetCell)
-				{
-					--nextCell.y;
-					direction = 3;
-					targetCell = Point{ -1,-1 };
-				}
-				else if (Point(currentCell.x, currentCell.y + 1) == targetCell)
-				{
-					++nextCell.y;
-					direction = 0;
-					targetCell = Point{ -1,-1 };
-				}
-				else if(Point{currentCell.x -1, currentCell.y +1} == targetCell)
-				{
-					--nextCell.x;
-					direction = 1;
-				}
-				else if (Point{ currentCell.x - 1, currentCell.y - 1 } == targetCell)
-				{
-					--nextCell.x;
-					direction = 1;
-				}
-				else if (Point{ currentCell.x + 1, currentCell.y + 1 } == targetCell)
-				{
-					++nextCell.x;
-					direction = 1;
-				}
-				else if (Point{ currentCell.x + 1, currentCell.y - 1} == targetCell)
-				{
-					++nextCell.x;
-					direction = 1;
-				}
-				else if (Point{ currentCell.x, currentCell.y + 2 } == targetCell)
-				{
-					++nextCell.y;
-					direction = 1;
-				}
-				else if (Point{ currentCell.x + 2, currentCell.y } == targetCell)
-				{
-					++nextCell.x;
-					direction = 1;
-				}
-				else if (Point{ currentCell.x , currentCell.y - 2 } == targetCell)
-				{
-					--nextCell.y;
-					direction = 1;
-				}
-				else if (Point{ currentCell.x - 2 , currentCell.y } == targetCell)
-				{
-					--nextCell.x;
-					direction = 1;
-				}
-			}
-			*/
-
-			if(routes.size() > 1)
-			{
-				if(nextCell==routes[routes.size()-1])
+				if (currentCell == routes[routes.size() - 1])
 				{
 					routes.removed_at(routes.size() - 1);
 					routes.resize(routes.size() - 1);
@@ -382,19 +223,19 @@ void Main()
 
 				Point diff = nextCell - currentCell;
 
-				if(diff.x == -1)
+				if (diff.x == -1)
 				{
 					direction = 1;
 				}
-				if (diff.x == 1)
+				else if (diff.x == 1)
 				{
 					direction = 2;
 				}
-				if (diff.y == -1)
+				else if (diff.y == -1)
 				{
 					direction = 3;
 				}
-				if (diff.y == 1)
+				else if (diff.y == 1)
 				{
 					direction = 0;
 				}
@@ -462,36 +303,34 @@ void Main()
 			}
 		}
 
-		// 左クリックで、ルート検索し、そこへ移動
-		if (MouseL.down())
+		// 左クリックで、その場所までのルートを割り出す
+	 if (MouseL.down())
 		{
-			int mousePosX = Cursor::Pos().x;
-			int mousePosY = Cursor::Pos().y;
-			Vec2 index = mapchip.GetFromMouse(Vec2{ mousePosX, mousePosY });
+			int indexX = mapchip.GetXFromMouseX(Cursor::Pos().x);
+			int indexY = mapchip.GetYFromMouseY(Cursor::Pos().y);
 
-			Point warpCell = Point{ (int)index.x, (int)index.y };
+			Point warpCell = Point{ indexX, indexY };
 
 			warpCell.x = Clamp(warpCell.x, 0, (MapSize.x - 1));
 			warpCell.y = Clamp(warpCell.y, 0, (MapSize.y - 1));
 
 			if (mapPassable[warpCell] == 0)
 			{
-				// nextCell = currentCell = Point{ (int)index.x, (int)index.y };
+				// nextCell = currentCell = Point{ indexX, indexY };
 				targetCell = warpCell;
 
 				mapSearchOpen.fill(true);
 				routes.resize(0);
 
-				SearchRoute(currentCell, targetCell, routes, mapSearchOpen, mapPassable, 0);
+				int32 weight = SearchRoute(0, currentCell, targetCell, routes, mapSearchOpen, mapPassable);
+				Print << weight;
+
 				ClearPrint();
-				for (int i = 0; i < routes.size() - 1; i++)
-				{
-					Print << routes[i];
-				}
+
 			}
 			else
 			{
-				targetCell = Point{ -1,-1 };
+				targetCell = Point{ -1, -1 };
 			}
 		}
 
@@ -520,7 +359,7 @@ void Main()
 					if (const int32 chipIndex = mapLayer0[y][x];
 						chipIndex != 0) // 0 の場合は描画しない
 					{
-						if(targetCell.x == x && targetCell.y == y)
+						if (targetCell.x == x && targetCell.y == y)
 						{
 							mapchip.get(chipIndex).draw(pos, Palette::Red);
 						}
